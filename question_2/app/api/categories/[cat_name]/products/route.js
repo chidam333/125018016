@@ -15,14 +15,25 @@ export async function GET(req, {params}) {
     let data = await response.json()
     let access_token = data["access_token"]
     let sp = req.nextUrl.searchParams
-    const companies =["AMZ", "FLP", "SNP", "ΜΥΝ", "ΑΖΟ"]
+    const companies =["AMZ", "FLP", "SNP", "MYN", "AZO"]
     const cats = [ "Phone", "Computer", "TV", "Earphone", "Tablet", "Charger", "Mouse", "Keypad", "Bluetooth", "Pendrive", "Remote", "Speaker", "Headset", "Laptop", "PC"]
+    let excluded_comp_str = sp.get("ex_cmp")
+    let ex_cmp = excluded_comp_str.split(",")
+    console.log({ex_cmp})
     const catName = params.cat_name
     if(!cats.includes(catName)){
         return Response.json({error:"Send a proper catname"})
     }
     const  n = parseInt(sp.get("n"))
     let page = parseInt(sp.get("page"))
+    let min = parseInt(sp.get("min"))
+    let max = parseInt(sp.get("max"))
+    if(Number.isNaN(min)){
+        min = 1
+    }
+    if(Number.isNaN(max)){
+        max = 10000
+    }
     if(Number.isNaN(n)){
         return Response.json({error:"Send n"})
     }
@@ -31,40 +42,71 @@ export async function GET(req, {params}) {
     }
     let outputs = []
 
+    // for(let company of companies){
+    //     if(ex_cmp.includes(company)){
+    //         continue
+    //     }
+    //     let response = await fetch(`http://20.244.56.144/test/companies/${company}/categories/${catName}/products?top=${n}&minPrice=${min}&maxPrice=${max}`,{
+    //             headers:{
+    //                 "Authorization":`Bearer ${access_token}`
+    //             }
+    //         })
+    //     let data = await response.json()
+    //     try{
+    //         outputs = [...outputs,...data]
+    //     }catch(e){
+    //         console.log({e})
+    //         console.log({outputs},data)
+    //         return Response.json({e})    
+    //     }
+    // }
     // didn't want to deal with headace of for loops in time limitation lol
-    let ramz = await fetch(`http://20.244.56.144/test/companies/AMZ/categories/${catName}/products?top=${n}&minPrice=1&maxPrice=10000`,{
+    let ramz = await fetch(`http://20.244.56.144/test/companies/AMZ/categories/${catName}/products?top=${n}&minPrice=${min}&maxPrice=${max}`,{
         headers:{
             "Authorization":`Bearer ${access_token}`
         }
     })
     let amz = await ramz.json()
-    let rflp = await fetch(`http://20.244.56.144/test/companies/FLP/categories/${catName}/products?top=${n}&minPrice=1&maxPrice=10000`,{
+    let rflp = await fetch(`http://20.244.56.144/test/companies/FLP/categories/${catName}/products?top=${n}&minPrice=${min}&maxPrice=${max}`,{
         headers:{
             "Authorization":`Bearer ${access_token}`
         }
     })
     let flp  = await rflp.json()
-    let rsnp = await fetch(`http://20.244.56.144/test/companies/SNP/categories/${catName}/products?top=${n}&minPrice=1&maxPrice=10000`,{
+    let rsnp = await fetch(`http://20.244.56.144/test/companies/SNP/categories/${catName}/products?top=${n}&minPrice=${min}&maxPrice=${max}`,{
         headers:{
             "Authorization":`Bearer ${access_token}`
         }
     })
     let snp = await rsnp.json()
-    let rmyn = await fetch(`http://20.244.56.144/test/companies/MYN/categories/${catName}/products?top=${n}&minPrice=1&maxPrice=10000`,{
+    let rmyn = await fetch(`http://20.244.56.144/test/companies/MYN/categories/${catName}/products?top=${n}&minPrice=${min}&maxPrice=${max}`,{
         headers:{
             "Authorization":`Bearer ${access_token}`
         }
     })
     let myn = await rmyn.json()
-    let razo = await fetch(`http://20.244.56.144/test/companies/AZO/categories/${catName}/products?top=${n}&minPrice=1&maxPrice=10000`,{
+    let razo = await fetch(`http://20.244.56.144/test/companies/AZO/categories/${catName}/products?top=${n}&minPrice=${min}&maxPrice=${max}`,{
         headers:{
             "Authorization":`Bearer ${access_token}`
         }
     })
     let azo = await razo.json()
-    console.log(amz.errors)
+    let map = {
+        "AMZ":amz,
+        "FLP":flp,
+        "SNP":snp,
+        "MYN":myn,
+        "AZO":azo
+        }
+    console.log("myn",map["MYN"])
     try{
-        outputs = [...amz,...azo,...flp,...myn,...snp]
+        for(let c of companies){
+            if(ex_cmp.includes(c.toUpperCase())){
+                continue
+            }
+            // console.log("mapx",map[c],{c,ex_cmp})
+            outputs.push(...map[c])
+        }
     }catch(e){
         console.log({e})
         return Response.json({e})
